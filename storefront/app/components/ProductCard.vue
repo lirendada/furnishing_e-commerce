@@ -39,7 +39,6 @@ const props = defineProps({
   }
 })
 
-// 深度解析带 Region 的计算价格与货币
 const formattedPrice = computed(() => {
   const variant = props.product.variants?.[0]
   if (!variant) return 'Price TBD'
@@ -48,14 +47,15 @@ const formattedPrice = computed(() => {
   const amount = variant.calculated_price?.calculated_amount || variant.prices?.[0]?.amount
   if (amount === undefined || amount === null) return 'Price TBD'
   
-  // 🌟 动态获取后端的货币代码 (比如后台设置了 AUD，这里就会读取到 'aud')
   const currencyCode = variant.calculated_price?.currency_code || variant.prices?.[0]?.currency_code || 'AUD'
   
+  // ⚠️ 修复：直接传入 amount，移除 / 100
   const formatted = new Intl.NumberFormat('en-AU', { 
     style: 'currency', 
     currency: currencyCode.toUpperCase() 
-  }).format(amount / 100)
+  }).format(amount)
   
+  // 澳洲独立站标准做法：含税价格后追加 (Inc. GST) 提示
   return `${formatted} (Inc. GST)`
 })
 </script>

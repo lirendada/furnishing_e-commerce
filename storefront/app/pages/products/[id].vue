@@ -264,7 +264,6 @@ const activeVariant = computed(() => {
   })
 })
 
-// 🌟 核心优化 1：深度解析 Medusa v2 价格与动态货币
 const formattedPrice = computed(() => {
   const variant = activeVariant.value || product.value?.variants?.[0]
   if (!variant) return 'Price TBD'
@@ -275,14 +274,13 @@ const formattedPrice = computed(() => {
               
   if (amount === undefined || amount === null) return 'Price TBD'
   
-  // 动态读取货币代码
   const currencyCode = variant.calculated_price?.currency_code || variant.prices?.[0]?.currency_code || 'AUD'
   
-  // 转换为澳洲当地货币格式
+  // ⚠️ 修复：直接传入 amount，移除 / 100
   return new Intl.NumberFormat('en-AU', { 
     style: 'currency', 
     currency: currencyCode.toUpperCase() 
-  }).format(amount / 100)
+  }).format(amount)
 })
 
 // ==========================================
