@@ -39,15 +39,22 @@ const props = defineProps({
   }
 })
 
-// 计算价格：抓取 Medusa 变体中的最低价/默认价，并格式化为 AUD 含税格式
+// 深度解析带 Region 的计算价格与货币
 const formattedPrice = computed(() => {
-  // Medusa v2 的价格数据结构可能较深，这里做一个防御性读取
-  const amount = props.product.variants?.[0]?.prices?.[0]?.amount
-  if (!amount) return 'Price TBD'
+  const variant = props.product.variants?.[0]
+  if (!variant) return 'Price TBD'
   
-  // Medusa 中金额通常以分为单位，需除以 100
-  const aud = amount / 100
-  const formatted = new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(aud)
+  // 抓取后台真实价格
+  const amount = variant.calculated_price?.calculated_amount || variant.prices?.[0]?.amount
+  if (amount === undefined || amount === null) return 'Price TBD'
+  
+  // 🌟 动态获取后端的货币代码 (比如后台设置了 AUD，这里就会读取到 'aud')
+  const currencyCode = variant.calculated_price?.currency_code || variant.prices?.[0]?.currency_code || 'AUD'
+  
+  const formatted = new Intl.NumberFormat('en-AU', { 
+    style: 'currency', 
+    currency: currencyCode.toUpperCase() 
+  }).format(amount / 100)
   
   return `${formatted} (Inc. GST)`
 })

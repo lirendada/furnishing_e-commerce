@@ -33,8 +33,13 @@
 <script setup>
 const medusa = useMedusa()
 
-// 拉取后台商品列表
-const { data, pending, error } = await useAsyncData('products', () => 
-  medusa('/store/products')
-)
+// 1. 先向后端请求默认的地区 (Region)
+const { data: regionData } = await useAsyncData('regions', () => medusa('/store/regions'))
+const regionId = regionData.value?.regions?.[0]?.id
+
+// 2. 带着 Region ID 去请求商品，后端才会解锁并吐出计算后的真实价格！
+const { data, pending, error } = await useAsyncData('products', () => {
+  const url = regionId ? `/store/products?region_id=${regionId}` : '/store/products'
+  return medusa(url)
+})
 </script>
