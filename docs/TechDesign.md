@@ -6,7 +6,7 @@
 
 **技术选型结论**:
 - 前端: Nuxt 3 (Vue生态)
-- 后端: Medusa v1
+- 后端: Medusa v2
 - UI组件: Element Plus
 - 图片存储: 腾讯云OSS (COS)
 
@@ -92,10 +92,10 @@ export default defineNuxtConfig({
 
 | 技术 | 版本 | 用途 |
 |------|------|------|
-| Medusa | v1.20 | 电商后端引擎 |
+| Medusa | v2.13.2 | 电商后端引擎 |
 | PostgreSQL | 15 | 主数据库 |
 | Redis | 7.2 | 缓存/Session |
-| Node.js | 18 LTS | 运行时 |
+| Node.js | 22.16.0 | 运行时 |
 
 **Medusa 插件配置**:
 - `medusa-payment-stripe`: Stripe支付集成
