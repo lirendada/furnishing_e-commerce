@@ -25,7 +25,7 @@
           <input 
             type="text" 
             class="block w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-sm text-sm placeholder-gray-400 font-medium text-black focus:bg-white focus:border-black focus:ring-0 transition-all duration-300 outline-none" 
-            placeholder="Search for furniture..." 
+            
           />
         </div>
 

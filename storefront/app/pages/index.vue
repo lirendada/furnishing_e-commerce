@@ -73,20 +73,30 @@
       </div>
     </section>
 
-    <section class="border-b border-gray-100 py-12 bg-white">
+    <section class="border-b border-gray-200 py-20 bg-[#F4F3ED]">
       <div class="max-w-3xl mx-auto px-4 text-center flex flex-col items-center">
-        <h2 class="text-2xl font-black uppercase tracking-widest text-black mb-2">Where is my order?</h2>
-        <p class="text-gray-500 mb-6 text-sm">Enter your tracking number below to get real-time updates on your furniture delivery.</p>
-        <div class="flex w-full max-w-md gap-2">
-          <input 
-            type="text" 
-            placeholder="e.g. MCP12345678" 
-            class="flex-1 bg-gray-50 border border-gray-200 px-4 py-3 focus:outline-none focus:border-black focus:ring-1 focus:ring-black text-sm font-medium transition-colors rounded-sm"
-          />
-          <button class="bg-black text-white px-6 py-3 font-bold uppercase tracking-widest text-sm hover:bg-gray-800 transition-colors rounded-sm">
-            Track
-          </button>
-        </div>
+        <svg class="w-12 h-12 text-gray-800 mb-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12" />
+        </svg>
+        
+        <h2 class="text-3xl font-black uppercase tracking-[0.1em] text-black mb-4">
+          $59 Flat Rate Delivery
+        </h2>
+        
+        <p class="text-gray-800 mb-2 text-base max-w-lg leading-relaxed font-semibold">
+          Take advantage of our flat-rate delivery fee - just $59 per order across Australia.
+        </p>
+        
+        <p class="text-gray-500 mb-10 text-sm max-w-md leading-relaxed">
+          Use our postcode checker to see if we deliver to you!
+        </p>
+        
+        <button 
+          @click="handleCheckDelivery"
+          class="bg-black text-white px-10 py-4 font-bold uppercase tracking-widest text-sm rounded-full shadow-md hover:bg-gray-800 hover:shadow-xl hover:-translate-y-1 hover:scale-105 active:scale-95 transition-all duration-300"
+        >
+          Check If We Deliver To You
+        </button>
       </div>
     </section>
 
@@ -199,37 +209,37 @@ const { data, pending, error } = await useAsyncData('products', () => {
   return medusa(url)
 })
 
-// 2. 🌟 分类拉取逻辑（直接对接后台）
+// 2. 分类拉取逻辑
 const { data: categoriesData, pending: categoriesPending } = await useAsyncData('categories', () => medusa('/store/product-categories'))
 
 const displayCategories = computed(() => {
   if (!categoriesData.value?.product_categories) return []
 
   return categoriesData.value.product_categories
-    // 【关键1】只保留那些在后台填写了 image_url 的分类，没传图片的分类不会在主页显示
     .filter(c => c.metadata?.image_url) 
     .map(c => ({
       id: c.id,
       name: c.name,
       link: `/categories/${c.handle}`,
       image: c.metadata.image_url,
-      // 【关键2】读取 rank 字段，如果没有填则默认为 0
       rank: Number(c.metadata?.rank) || 0 
     }))
-    // 【关键3】根据 rank 进行升序排列 (比如：1 排在 2 前面)
     .sort((a, b) => a.rank - b.rank)
 })
-
 
 const handleShopNowClick = () => {
   router.push('/collections/sale')
 }
 
-// 🌟 轮播滚动控制
+// 单纯的跳转逻辑
+const handleCheckDelivery = () => {
+  router.push('/delivery-information')
+}
+
+// 轮播滚动控制
 const carouselRef = ref(null)
 const scrollCategories = (direction) => {
   if (carouselRef.value) {
-    // 🌟 微调滚动距离，与新的卡片宽度+gap一致 (220 + 20 = 240)
     const scrollAmount = direction === 'left' ? -240 : 240 
     carouselRef.value.scrollBy({ left: scrollAmount, behavior: 'smooth' })
   }
