@@ -52,19 +52,19 @@
         <div 
           v-else
           ref="carouselRef"
-          class="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          class="flex gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           <NuxtLink 
             v-for="cat in displayCategories" 
             :key="cat.id"
             :to="cat.link" 
-            class="snap-start shrink-0 w-[240px] sm:w-[280px] group/card cursor-pointer flex flex-col items-center text-center"
+            class="snap-start shrink-0 w-[220px] group/card cursor-pointer flex flex-col items-center text-center"
           >
-            <div class="aspect-[4/3] w-full bg-gray-100 overflow-hidden relative mb-5 rounded-2xl shadow-sm group-hover/card:shadow-md transition-shadow duration-300">
+            <div class="aspect-square w-full bg-gray-100 overflow-hidden relative mb-5 rounded-2xl shadow-sm group-hover/card:shadow-md transition-shadow duration-300">
               <img :src="cat.image" :alt="cat.name" class="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-700 ease-out" />
             </div>
             
-            <h3 class="text-[13px] font-black uppercase tracking-widest text-gray-900 group-hover/card:text-gray-500 transition-colors w-full">
+            <h3 class="text-lg font-bold uppercase tracking-[0.15em] text-gray-900 group-hover/card:text-gray-500 transition-colors w-full px-1">
               {{ cat.name }}
             </h3>
           </NuxtLink>
@@ -229,7 +229,8 @@ const handleShopNowClick = () => {
 const carouselRef = ref(null)
 const scrollCategories = (direction) => {
   if (carouselRef.value) {
-    const scrollAmount = direction === 'left' ? -320 : 320 
+    // 🌟 微调滚动距离，与新的卡片宽度+gap一致 (220 + 20 = 240)
+    const scrollAmount = direction === 'left' ? -240 : 240 
     carouselRef.value.scrollBy({ left: scrollAmount, behavior: 'smooth' })
   }
 }
