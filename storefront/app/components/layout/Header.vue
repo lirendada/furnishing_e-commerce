@@ -1,11 +1,13 @@
 <template>
-  <header class="bg-white border-b border-gray-200 relative z-50">
-    <div class="bg-black text-white text-xs font-bold text-center py-2.5 tracking-[0.2em]">
-      AUSTRALIA WIDE DELIVERY | FLAT RATE $59 TO APPLICABLE AREAS
-    </div>
+  <div class="bg-black text-white text-xs font-bold text-center py-2.5 tracking-[0.2em]">
+    AUSTRALIA WIDE DELIVERY | FLAT RATE $59 TO APPLICABLE AREAS
+  </div>
 
+  <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm transition-all duration-300">
+    
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex justify-between items-center h-24">
+        
         <div class="flex-shrink-0 flex items-center cursor-pointer">
           <NuxtLink to="/">
             <h1 class="text-4xl font-serif font-extrabold tracking-tighter text-gray-900">
@@ -14,30 +16,53 @@
           </NuxtLink>
         </div>
 
-        <div class="hidden md:flex flex-1 max-w-2xl mx-12">
-          <el-input 
+        <div class="hidden md:block flex-1 max-w-xl mx-12 relative group">
+          <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5 text-gray-400 group-focus-within:text-black transition-colors duration-300">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
+            </svg>
+          </div>
+          <input 
+            type="text" 
+            class="block w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-sm text-sm placeholder-gray-400 font-medium text-black focus:bg-white focus:border-black focus:ring-0 transition-all duration-300 outline-none" 
             placeholder="Search for furniture..." 
-            size="large"
-            class="w-full"
-          >
-            <template #append>
-              <el-button icon="Search" />
-            </template>
-          </el-input>
+          />
         </div>
 
-        <div class="flex items-center space-x-8">
-          <div class="text-gray-900 hover:text-gray-600 cursor-pointer flex flex-col items-center">
-            <span class="text-[13px] font-extrabold uppercase tracking-widest">Account</span>
-          </div>
-          <div @click="cartStore.openDrawer" class="text-gray-900 hover:text-gray-600 cursor-pointer flex flex-col items-center">
-            <span class="text-[13px] font-extrabold uppercase tracking-widest">Cart ({{ cartStore.totalItems || 0 }})</span>
-          </div>
+        <div class="flex items-center space-x-6 sm:space-x-8">
+          
+          <NuxtLink to="/account" class="text-gray-900 hover:text-gray-500 transition-colors duration-200">
+            <span class="sr-only">Account</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
+          </NuxtLink>
+
+          <button class="text-gray-900 hover:text-red-600 transition-colors duration-200">
+            <span class="sr-only">Wishlist</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+            </svg>
+          </button>
+
+          <button @click="cartStore.openDrawer" class="text-gray-900 hover:text-gray-500 transition-colors duration-200 relative">
+            <span class="sr-only">Cart</span>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-7 h-7">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007zM8.625 10.5a.375.375 0 11-.75 0 .375.375 0 01.75 0zm7.5 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z" />
+            </svg>
+            <span 
+              v-if="cartStore.totalItems > 0" 
+              class="absolute -top-1.5 -right-2 bg-black text-white text-[10px] font-bold w-4.5 h-4.5 px-1.5 flex items-center justify-center rounded-full shadow-sm"
+            >
+              {{ cartStore.totalItems }}
+            </span>
+          </button>
+
         </div>
       </div>
     </div>
 
-    <nav class="border-t border-gray-100 bg-white">
+    <nav class="border-t border-gray-100 bg-white relative">
       <ul class="flex justify-center space-x-10 max-w-7xl mx-auto px-4">
         <li 
           v-for="category in topCategories" 
