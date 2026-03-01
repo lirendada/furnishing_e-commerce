@@ -1,12 +1,19 @@
 <template>
-  <NuxtLink :to="`/products/${product.handle}`" class="group/card flex flex-col w-full cursor-pointer">
-    
-    <div class="relative w-full aspect-square bg-[#f8f8f8] overflow-hidden mb-4 rounded-md">
-      <img
-        :src="product.thumbnail || 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80'"
+  <NuxtLink 
+    :to="`/products/${product.handle}`" 
+    class="group/card flex flex-col w-full cursor-pointer transform transition-transform duration-300 ease-out hover:-translate-y-1.5"
+  >
+
+    <div class="relative w-full aspect-square bg-[#f8f8f8] overflow-hidden mb-4 rounded-md transition-all duration-300 ease-out group-hover/card:shadow-xl border border-transparent group-hover/card:border-gray-100">
+      
+      <ImageLoader
+        :src="product.thumbnail || fallbackImage"
         :alt="product.title"
-        class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/card:scale-105"
-        loading="lazy"
+        preset="card"
+        width="400"
+        height="400"
+        :image-class="'w-full h-full object-cover'"
+        skeleton-class="bg-gray-200"
       />
 
       <button
@@ -33,7 +40,7 @@
       </h3>
 
       <div class="flex items-center flex-wrap gap-2.5 mt-auto">
-        
+
         <template v-if="hasDiscount">
           <span class="text-lg font-black text-red-700 tracking-wide">
             {{ formattedCurrentPrice }}
@@ -67,19 +74,22 @@ const props = defineProps({
   }
 })
 
+// 备用图片 (Unsplash 家具图片)
+const fallbackImage = 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&w=600&q=80'
+
 const isFavorite = ref(false)
 const toggleFavorite = () => {
   isFavorite.value = !isFavorite.value
 }
 
-// 1. 获取商品现价
+// 获取商品现价
 const currentPriceAmount = computed(() => {
   const variant = props.product?.variants?.[0]
   if (!variant) return 0
   return variant.calculated_price?.calculated_amount ?? variant.prices?.[0]?.amount ?? 0
 })
 
-// 2. 获取商品原价
+// 获取商品原价
 const originalPriceAmount = computed(() => {
   const variant = props.product?.variants?.[0]
   const originalAmount = variant?.calculated_price?.original_amount
@@ -89,26 +99,26 @@ const originalPriceAmount = computed(() => {
   return currentPriceAmount.value
 })
 
-// 3. 判断是否有折扣
+// 判断是否有折扣
 const hasDiscount = computed(() => {
   return originalPriceAmount.value > currentPriceAmount.value
 })
 
-// 4. 计算折扣百分比
+// 计算折扣百分比
 const discountPercentage = computed(() => {
   if (!hasDiscount.value || originalPriceAmount.value === 0) return 0
   const diff = originalPriceAmount.value - currentPriceAmount.value
   return Math.round((diff / originalPriceAmount.value) * 100)
 })
 
-// 5. 格式化金额辅助函数：变成 $XXX 格式
+// 格式化金额
 const formatPrice = (amount) => {
   const validAmount = Number(amount) || 0
   return new Intl.NumberFormat('en-AU', {
     style: 'currency',
     currency: 'AUD',
-    minimumFractionDigits: 0 
-  }).format(validAmount) 
+    minimumFractionDigits: 0
+  }).format(validAmount)
 }
 
 const formattedOriginalPrice = computed(() => formatPrice(originalPriceAmount.value))

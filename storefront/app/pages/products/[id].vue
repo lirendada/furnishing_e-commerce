@@ -1,130 +1,3 @@
-<!-- <template>
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <nav class="flex mb-8 text-sm text-gray-500 font-semibold tracking-wide uppercase">
-      <NuxtLink to="/" class="hover:text-black transition-colors">Home</NuxtLink>
-      <span class="mx-2">/</span>
-      <span class="text-black">{{ product?.title || 'Loading...' }}</span>
-    </nav>
-
-    <div v-if="pending" class="py-20 text-center text-gray-400 uppercase tracking-widest font-bold">
-      Loading Product Details...
-    </div>
-    <div v-else-if="error" class="py-20 text-center text-red-500 font-bold">
-      Error: {{ error.message }}
-    </div>
-
-    <div v-else-if="product" class="grid grid-cols-1 lg:grid-cols-2 gap-16">
-      
-      <div class="flex flex-col space-y-6">
-        <div 
-          class="bg-gray-100 aspect-square relative overflow-hidden group rounded-sm shadow-sm border border-gray-100"
-          :class="isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'"
-          @click="toggleZoom"
-          @mousemove="updateZoomPosition"
-          @mouseleave="handleMouseLeave"
-        >
-          <img 
-            v-if="currentImage" 
-            :src="currentImage" 
-            :alt="product.title"
-            class="object-cover w-full h-full transition-transform duration-200 ease-out pointer-events-none"
-            :style="magnifierStyle"
-          />
-          <span v-else class="absolute inset-0 flex items-center justify-center text-gray-400 font-bold uppercase tracking-widest">No Image</span>
-
-          <button 
-            v-if="allImages.length > 1"
-            @click.stop="prevImage" 
-            class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-black w-10 h-10 flex items-center justify-center rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
-          </button>
-          
-          <button 
-            v-if="allImages.length > 1"
-            @click.stop="nextImage" 
-            class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 hover:bg-white text-black w-10 h-10 flex items-center justify-center rounded-full shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 z-10"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-          </button>
-        </div>
-
-        <div v-if="allImages.length > 1" class="grid grid-cols-5 gap-4">
-          <button 
-            v-for="(imgUrl, index) in allImages" 
-            :key="index"
-            @click="setMainImage(index)"
-            class="aspect-square bg-gray-100 overflow-hidden rounded-sm border-2 transition-all duration-200"
-            :class="currentIndex === index ? 'border-black' : 'border-transparent hover:border-gray-300'"
-          >
-            <img :src="imgUrl" class="w-full h-full object-cover pointer-events-none" />
-          </button>
-        </div>
-      </div>
-
-      <div class="flex flex-col">
-        <h1 class="text-4xl font-serif font-extrabold text-gray-900 mb-2 tracking-tighter uppercase">
-          {{ product.title }}
-        </h1>
-        <p class="text-gray-500 mb-6 text-sm leading-relaxed">{{ product.description }}</p>
-        
-        <div class="mb-8 border-b border-gray-200 pb-8">
-          <p class="text-3xl font-black text-black">
-            {{ formattedPrice }}
-          </p>
-          <p class="text-[10px] text-gray-500 font-black tracking-[0.2em] uppercase mt-2">Includes GST</p>
-        </div>
-
-        <div v-for="option in product.options" :key="option.id" class="mb-8">
-          <h3 class="text-sm font-bold text-gray-900 uppercase tracking-widest mb-4 flex justify-between">
-            <span>{{ option.title }}</span>
-            <span class="text-gray-400 font-medium">{{ selectedOptions[option.id] || 'Select' }}</span>
-          </h3>
-          <div class="flex flex-wrap gap-3">
-            <button
-              v-for="value in option.values"
-              :key="value.id"
-              @click="setOption(option.id, value.value)"
-              :disabled="!isVariantAvailable(option.id, value.value)"
-              class="px-6 py-3 border text-[13px] font-extrabold uppercase tracking-widest transition-all duration-200 relative overflow-hidden"
-              :class="[
-                selectedOptions[option.id] === value.value 
-                  ? 'border-black bg-black text-white' 
-                  : 'border-gray-200 bg-white text-gray-600 hover:border-gray-900',
-                !isVariantAvailable(option.id, value.value) && selectedOptions[option.id] !== value.value
-                  ? 'opacity-30 cursor-not-allowed hover:border-gray-200 line-through' 
-                  : ''
-              ]"
-            >
-              {{ value.value }}
-            </button>
-          </div>
-        </div>
-
-        <div class="mt-auto pt-8">
-          <div v-if="!activeVariant" class="mb-4 text-red-600 font-bold uppercase tracking-wider text-xs flex items-center">
-            <span class="mr-2">⚠️</span> Selected combination is unavailable.
-          </div>
-          
-          <el-button 
-            class="w-full h-16 text-[15px] tracking-[0.2em] uppercase font-black transition-transform active:scale-[0.98]" 
-            color="#000" 
-            :disabled="!activeVariant"
-            @click="addToCart"
-          >
-            {{ activeVariant ? 'Add to Cart' : 'Unavailable' }}
-          </el-button>
-          
-          <div class="mt-6 flex items-center justify-center space-x-6 text-[10px] font-black text-gray-500 uppercase tracking-[0.1em]">
-            <div class="flex items-center"><span class="text-base mr-2">📦</span> Fast Delivery</div>
-            <div class="flex items-center"><span class="text-base mr-2">🛡️</span> 1 Year Warranty</div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </main>
-</template> -->
-
 <template>
   <main class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <nav class="flex mb-8 text-sm text-gray-500 font-bold tracking-widest uppercase">
@@ -141,50 +14,65 @@
     </div>
 
     <div v-else-if="product" class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 lg:items-start relative">
-      
+
       <div class="flex flex-col space-y-6 lg:sticky lg:top-10 z-10">
-        
-        <div 
+
+        <!-- 主图 - 使用优化的图片组件 -->
+        <div
           class="bg-[#f8f8f8] aspect-[4/3] relative overflow-hidden group rounded-sm shadow-sm"
           :class="isZoomed ? 'cursor-zoom-out' : 'cursor-zoom-in'"
           @click="toggleZoom"
           @mousemove="updateZoomPosition"
           @mouseleave="handleMouseLeave"
         >
-          <img 
-            v-if="currentImage" 
-            :src="currentImage" 
+          <ImageLoader
+            v-if="currentImage"
+            :src="currentImage"
             :alt="product.title"
-            class="object-cover w-full h-full transition-transform duration-200 ease-out pointer-events-none mix-blend-multiply"
-            :style="magnifierStyle"
+            preset="pdp"
+            width="800"
+            height="800"
+            :image-class="'object-cover w-full h-full transition-transform duration-200 ease-out pointer-events-none mix-blend-multiply'"
+            :style="{ transform: magnifierStyle.transform, transformOrigin: magnifierStyle.transformOrigin }"
+            :enable-fade-in="false"
+            skeleton-class="bg-gray-200"
           />
           <span v-else class="absolute inset-0 flex items-center justify-center text-gray-400 font-bold uppercase tracking-widest">No Image</span>
 
-          <button 
+          <button
             v-if="allImages.length > 1"
-            @click.stop="prevImage" 
-            class="absolute left-4 top-1/2 -translate-y-1/2 bg-white text-black w-12 h-12 flex items-center justify-center rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+            @click.stop="prevImage"
+            class="absolute left-4 top-1/2 -translate-y-1/2 bg-white text-black w-12 h-12 flex items-center justify-center rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
           </button>
-          <button 
+          <button
             v-if="allImages.length > 1"
-            @click.stop="nextImage" 
-            class="absolute right-4 top-1/2 -translate-y-1/2 bg-white text-black w-12 h-12 flex items-center justify-center rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110"
+            @click.stop="nextImage"
+            class="absolute right-4 top-1/2 -translate-y-1/2 bg-white text-black w-12 h-12 flex items-center justify-center rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-all duration-300 hover:scale-110 z-10"
           >
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
           </button>
         </div>
 
+        <!-- 缩略图 - 使用优化的图片组件 -->
         <div v-if="allImages.length > 1" class="grid grid-cols-5 gap-4">
-          <button 
-            v-for="(imgUrl, index) in allImages" 
+          <button
+            v-for="(imgUrl, index) in allImages"
             :key="index"
             @click="setMainImage(index)"
             class="aspect-[4/3] bg-[#f8f8f8] overflow-hidden rounded-sm border-2 transition-all duration-200 p-2"
             :class="currentIndex === index ? 'border-black' : 'border-transparent hover:border-gray-200'"
           >
-            <img :src="imgUrl" class="w-full h-full object-contain pointer-events-none mix-blend-multiply" />
+            <ImageLoader
+              :src="imgUrl"
+              :alt="`${product.title} - Image ${index + 1}`"
+              preset="thumbnail"
+              width="150"
+              height="150"
+              :image-class="'w-full h-full object-contain pointer-events-none mix-blend-multiply'"
+              skeleton-class="bg-gray-300"
+            />
           </button>
         </div>
       </div>
@@ -193,11 +81,11 @@
         <h1 class="text-4xl sm:text-5xl font-serif font-extrabold text-gray-900 mb-6 tracking-tighter uppercase leading-tight">
           {{ product.title }}
         </h1>
-        
+
         <p class="text-gray-500 mb-8 text-sm leading-relaxed font-medium">
           {{ product.description }}
         </p>
-        
+
         <div class="mb-10 border-b border-gray-200 pb-8">
           <p class="text-4xl sm:text-5xl font-black text-black tracking-tight">
             {{ formattedPrice }}
@@ -218,11 +106,11 @@
               :disabled="!isVariantAvailable(option.id, value.value)"
               class="px-6 py-4 border text-[13px] font-extrabold uppercase tracking-widest transition-all duration-200 relative overflow-hidden rounded-sm"
               :class="[
-                selectedOptions[option.id] === value.value 
-                  ? 'border-black bg-black text-white shadow-md' 
+                selectedOptions[option.id] === value.value
+                  ? 'border-black bg-black text-white shadow-md'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-900 hover:text-black',
                 !isVariantAvailable(option.id, value.value) && selectedOptions[option.id] !== value.value
-                  ? 'opacity-30 cursor-not-allowed hover:border-gray-200 line-through' 
+                  ? 'opacity-30 cursor-not-allowed hover:border-gray-200 line-through'
                   : ''
               ]"
             >
@@ -235,27 +123,27 @@
           <div v-if="!activeVariant" class="mb-4 text-red-600 font-bold uppercase tracking-wider text-xs flex items-center">
             <span class="mr-2">⚠️</span> Selected combination is unavailable.
           </div>
-          
-          <el-button 
-            class="w-full h-[72px] text-[16px] tracking-[0.2em] uppercase font-black transition-transform active:scale-[0.98] shadow-xl" 
-            color="#000" 
+
+          <el-button
+            class="w-full h-[72px] text-[16px] tracking-[0.2em] uppercase font-black transition-transform active:scale-[0.98] shadow-xl"
+            color="#000"
             :disabled="!activeVariant"
             @click="addToCart"
           >
             {{ activeVariant ? 'Add to Cart' : 'Unavailable' }}
           </el-button>
-          
+
           <div class="mt-8 flex items-center justify-center space-x-8 text-[11px] font-black text-gray-500 uppercase tracking-[0.15em]">
             <div class="flex items-center"><span class="text-lg mr-2">📦</span> Fast Delivery</div>
             <div class="flex items-center"><span class="text-lg mr-2">🛡️</span> 1 Year Warranty</div>
           </div>
         </div>
-        
-        </div>
+
+      </div>
     </div>
 
     <div v-if="product" class="mt-24 border-t border-gray-200 pt-16">
-      
+
       <section class="mb-20">
         <h2 class="text-2xl font-serif font-extrabold text-center text-gray-900 mb-10 tracking-tighter uppercase">Our Top Picks For You</h2>
         <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -278,27 +166,30 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCartStore } from '~/stores/cart'
 
 const route = useRoute()
-const router = useRouter() // 🌟 新增：引入路由实例用于改变 URL
+const router = useRouter()
 const medusa = useMedusa()
 const cartStore = useCartStore()
 
 const productId = route.params.id
 
-// 1. 获取默认 Region
+// 获取默认 Region
 const { data: regionData } = await useAsyncData('regions', () => medusa('/store/regions'))
 const regionId = regionData.value?.regions?.[0]?.id
 
-// 2. 带着 Region ID 拉取单个商品详情
+// 拉取商品详情
 const { data, pending, error } = await useAsyncData(`product-${productId}`, () => {
-  const url = regionId ? `/store/products/${productId}?region_id=${regionId}` : `/store/products/${productId}`
+  // 修改 1: 将 /${productId} 替换为 ?handle=${productId}
+  // 注意：如果是带 regionId 的情况，后面要用 & 连接
+  const url = regionId 
+    ? `/store/products?handle=${productId}&region_id=${regionId}` 
+    : `/store/products?handle=${productId}`
   return medusa(url)
 })
 
-const product = computed(() => data.value?.product)
+// 修改 2: 按 handle 查询返回的是 products 数组，所以需要取 data.value?.products?.[0]
+const product = computed(() => data.value?.products?.[0])
 
-// ==========================================
-// 1. 多图画廊与轮播逻辑
-// ==========================================
+// 多图画廊与轮播
 const currentIndex = ref(0)
 
 const allImages = computed(() => {
@@ -328,9 +219,7 @@ const nextImage = () => {
   isZoomed.value = false
 }
 
-// ==========================================
-// 2. 局部放大镜逻辑
-// ==========================================
+// 局部放大镜逻辑
 const isZoomed = ref(false)
 const magnifierStyle = ref({ transform: 'scale(1)', transformOrigin: 'center center' })
 
@@ -353,23 +242,18 @@ const handleMouseLeave = () => {
   magnifierStyle.value = { transform: 'scale(1)', transformOrigin: 'center center' }
 }
 
-// ==========================================
-// 3. 规格联动与 URL 跳转逻辑 (方案二核心)
-// ==========================================
+// 规格选择与 URL 同步
 const selectedOptions = ref({})
 
-// 🌟 监听器改造：同时监听商品数据和 URL 中的 variant 参数
 watch([product, () => route.query.variant], ([newProduct, variantQuery]) => {
   if (newProduct && newProduct.variants?.length > 0) {
-    let targetVariant = newProduct.variants[0] // 默认选中第一个
-    
-    // 如果 URL 里有变体 ID，优先找那个变体
+    let targetVariant = newProduct.variants[0]
+
     if (variantQuery) {
       const found = newProduct.variants.find(v => v.id === variantQuery)
       if (found) targetVariant = found
     }
 
-    // 映射该变体的选项到页面状态上
     targetVariant.options.forEach(opt => {
       const optionDef = newProduct.options.find(o => o.title === opt.option?.title || o.id === opt.option_id)
       if (optionDef) selectedOptions.value[optionDef.id] = opt.value
@@ -379,9 +263,8 @@ watch([product, () => route.query.variant], ([newProduct, variantQuery]) => {
 
 const setOption = (optionId, value) => {
   selectedOptions.value[optionId] = value
-  isZoomed.value = false 
-  
-  // 🌟 点击规格不仅改状态，还要推送到新的 URL
+  isZoomed.value = false
+
   if (product.value?.variants) {
     const nextVariant = product.value.variants.find(variant => {
       return variant.options.every(opt => {
@@ -389,12 +272,11 @@ const setOption = (optionId, value) => {
         return optionDef && selectedOptions.value[optionDef.id] === opt.value
       })
     })
-    
-    // 如果找到了可用变体，将它的 ID 写入 URL 并产生浏览器历史记录
+
     if (nextVariant) {
-      router.push({ 
-        path: route.path, 
-        query: { variant: nextVariant.id } 
+      router.push({
+        path: route.path,
+        query: { variant: nextVariant.id }
       })
     }
   }
@@ -423,31 +305,26 @@ const activeVariant = computed(() => {
   })
 })
 
-// ==========================================
-// 4. 价格计算 (已修复 Medusa v2 精确存储 BUG)
-// ==========================================
+// 价格计算
 const formattedPrice = computed(() => {
   const variant = activeVariant.value || product.value?.variants?.[0]
   if (!variant) return 'Price TBD'
-  
-  const amount = variant.calculated_price?.calculated_amount 
-              || variant.prices?.[0]?.amount 
+
+  const amount = variant.calculated_price?.calculated_amount
+              || variant.prices?.[0]?.amount
               || variant.prices?.[0]?.price
-              
+
   if (amount === undefined || amount === null) return 'Price TBD'
-  
+
   const currencyCode = variant.calculated_price?.currency_code || variant.prices?.[0]?.currency_code || 'AUD'
-  
-  // ⚠️ 修复：直接使用 amount，不再除以 100
-  return new Intl.NumberFormat('en-AU', { 
-    style: 'currency', 
-    currency: currencyCode.toUpperCase() 
+
+  return new Intl.NumberFormat('en-AU', {
+    style: 'currency',
+    currency: currencyCode.toUpperCase()
   }).format(amount)
 })
 
-// ==========================================
-// 5. 购物车逻辑
-// ==========================================
+// 购物车
 const addToCart = () => {
   if (!activeVariant.value || !product.value) return
   cartStore.addItem(activeVariant.value, product.value, 1)

@@ -33,11 +33,17 @@
           <div>
             <h3 class="text-sm font-black uppercase tracking-widest text-white mb-6">Shop</h3>
             <ul class="space-y-4">
-              <li><NuxtLink to="/collections/living" class="text-gray-400 hover:text-white text-sm font-medium transition-colors">Living Room</NuxtLink></li>
-              <li><NuxtLink to="/collections/dining" class="text-gray-400 hover:text-white text-sm font-medium transition-colors">Dining Room</NuxtLink></li>
-              <li><NuxtLink to="/collections/bedroom" class="text-gray-400 hover:text-white text-sm font-medium transition-colors">Bedroom</NuxtLink></li>
-              <li><NuxtLink to="/collections/outdoor" class="text-gray-400 hover:text-white text-sm font-medium transition-colors">Outdoor</NuxtLink></li>
-              <li><NuxtLink to="/collections/sale" class="text-red-500 hover:text-red-400 text-sm font-bold transition-colors">Sale</NuxtLink></li>
+              <li v-for="cat in shopCategories" :key="cat.id">
+                <NuxtLink :to="cat.link" class="text-gray-400 hover:text-white text-sm font-medium transition-colors">
+                  {{ cat.name }}
+                </NuxtLink>
+              </li>
+              
+              <li>
+                <NuxtLink to="/collections/sale" class="text-red-500 hover:text-red-400 text-sm font-bold transition-colors">
+                  Sale
+                </NuxtLink>
+              </li>
             </ul>
           </div>
 
@@ -86,5 +92,25 @@
 </template>
 
 <script setup>
-// 如果未来有表单提交逻辑，可以写在这里
+import { computed } from 'vue'
+
+const medusa = useMedusa()
+
+// 🌟 动态拉取分类数据
+const { data: categoriesData } = await useAsyncData('footer_categories', () => medusa('/store/product-categories'))
+
+// 🌟 处理并排序分类数据
+const shopCategories = computed(() => {
+  if (!categoriesData.value?.product_categories) return []
+
+  return categoriesData.value.product_categories
+    .map(c => ({
+      id: c.id,
+      name: c.name,
+      link: `/categories/${c.handle}`,
+      // 读取后台配置的 rank 进行排序，没有填则默认为 0
+      rank: Number(c.metadata?.rank) || 0 
+    }))
+    .sort((a, b) => a.rank - b.rank)
+})
 </script>
