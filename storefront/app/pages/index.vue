@@ -259,7 +259,7 @@ const { data, pending, error } = await useAsyncData('products', () => {
   }
 })
 
-const { data: categoriesData, pending: categoriesPending } = await useAsyncData('categories', () => medusa('/store/product-categories'))
+const { data: categoriesData, pending: categoriesPending } = await useAsyncData('categories', () => medusa('/store/product-categories?fields=id,name,handle,metadata,parent_category_id'))
 
 const displayCategories = computed(() => {
   if (!categoriesData.value?.product_categories) return []

@@ -76,6 +76,11 @@ const props = defineProps({
     type: [Number, String],
     default: undefined
   },
+  // 添加 skipOptimization 选项，跳过 NuxtImg 优化
+  skipOptimization: {
+    type: Boolean,
+    default: false
+  },
   aspectRatio: {
     type: String,
     default: null
@@ -138,9 +143,9 @@ const onError = () => {
   isLoaded.value = true
 }
 
-// 判断是否为本地静态图片
+// 判断是否为本地静态图片 或 跳过优化
 const isLocalImage = computed(() => {
-  return props.src.startsWith('/')
+  return props.src.startsWith('/') || props.skipOptimization
 })
 
 // 根据是否 eager 加载决定 loading 模式

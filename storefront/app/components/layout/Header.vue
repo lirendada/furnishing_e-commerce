@@ -133,9 +133,9 @@ const medusa = useMedusa()
 const cartStore = useCartStore()
 const categories = ref([])
 
-// 从 Medusa v2 拉取商品分类树
-const { data } = await useAsyncData('categories', () => 
-  medusa('/store/product-categories?include_descendants_tree=true')
+// 从 Medusa v2 拉取商品分类树（需要指定 fields 才能获取 metadata）
+const { data } = await useAsyncData('header-categories', () =>
+  medusa('/store/product-categories?include_descendants_tree=true&fields=id,name,handle,metadata,parent_category_id,category_children')
 )
 
 if (data.value && data.value.product_categories) {

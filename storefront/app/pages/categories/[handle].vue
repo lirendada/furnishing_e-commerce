@@ -1,36 +1,41 @@
 <template>
   <main class="flex-grow w-full bg-white pb-20">
-    <section class="relative w-full h-[300px] sm:h-[400px] bg-gray-100 flex items-center justify-center overflow-hidden">
-      <img 
+    <!-- Hero 区域 -->
+    <section class="relative w-full h-[400px] bg-gray-100 overflow-hidden">
+      <img
         v-if="category?.metadata?.image_url"
-        :src="category.metadata.image_url" 
-        :alt="category?.name" 
-        class="absolute inset-0 w-full h-full object-cover z-0"
+        :src="category.metadata.image_url"
+        :alt="category?.name"
+        class="absolute inset-0 w-full h-full object-cover"
       />
-      <div v-else class="absolute inset-0 w-full h-full bg-gray-200 opacity-50 pattern-dots"></div>
-      
-      <div class="absolute inset-0 bg-black/40 z-10"></div>
-      
-      <div class="relative z-20 text-center px-4 max-w-3xl mx-auto">
-        <h1 class="text-4xl sm:text-5xl font-serif font-extrabold text-white mb-4 tracking-wider uppercase drop-shadow-lg">
+      <div v-else class="absolute inset-0 bg-gray-300 flex items-center justify-center">
+        <span class="text-gray-500">No Image</span>
+      </div>
+
+      <!-- 黑色遮罩 -->
+      <div class="absolute inset-0 bg-black/40"></div>
+
+      <!-- 标题文字 -->
+      <div class="relative z-10 h-full flex items-center justify-center text-center px-4">
+        <h1 class="text-5xl font-bold text-white uppercase tracking-wider">
           {{ category?.name || 'Loading...' }}
         </h1>
-        <p v-if="category?.description" class="text-white text-base sm:text-lg font-medium drop-shadow-md">
-          {{ category.description }}
-        </p>
       </div>
     </section>
 
+    <!-- 面包屑 -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-100 text-sm text-gray-500 font-medium">
       <NuxtLink to="/" class="hover:text-black transition-colors">Home</NuxtLink>
       <span class="mx-2">/</span>
       <span class="text-black">{{ category?.name }}</span>
     </div>
 
+    <!-- 商品列表区域 -->
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <div class="flex flex-col lg:flex-row gap-10">
-        
-        <aside class="w-full lg:w-[280px] flex-shrink-0">
+
+        <!-- 侧边栏过滤器 -->
+        <aside class="w-full lg:w-[280px] flex-shrink-0 hidden lg:block">
           <div class="sticky top-24 space-y-1">
             <div class="flex items-center justify-between mb-6">
               <h2 class="text-xl font-bold uppercase tracking-widest text-gray-900">Filter By</h2>
@@ -104,17 +109,20 @@
           </div>
         </aside>
 
+        <!-- 商品网格 -->
         <div class="flex-1">
           <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+
             <div class="text-sm text-gray-500 font-medium">
               Showing <span class="text-black font-bold">{{ products.length }}</span> products
             </div>
-            
+
             <div class="flex items-center gap-3 w-full sm:w-auto">
               <label for="sort" class="text-sm font-bold uppercase tracking-wider text-gray-900 whitespace-nowrap">Sort By:</label>
-              <select 
-                id="sort" 
+              <select
+                id="sort"
                 v-model="sortBy"
+                @change="handleSortChange"
                 class="w-full sm:w-auto bg-white border border-gray-300 text-gray-900 text-sm rounded-md focus:ring-black focus:border-black block py-2.5 px-3 cursor-pointer"
               >
                 <option value="created_at">Featured</option>
@@ -126,7 +134,7 @@
             </div>
           </div>
 
-          <div v-if="productsPending" class="grid grid-cols-2 lg:grid-cols-3 gap-6">
+          <div v-if="isInitialLoading" class="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
             <div v-for="i in 6" :key="i" class="animate-pulse">
               <div class="bg-gray-200 aspect-square rounded-lg mb-4"></div>
               <div class="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
@@ -140,16 +148,21 @@
           </div>
 
           <div v-else class="grid grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-10">
-            <ProductCard 
-              v-for="product in products" 
-              :key="product.id" 
-              :product="product" 
+            <ProductCard
+              v-for="product in products"
+              :key="product.id"
+              :product="product"
             />
           </div>
-          
-          <div v-if="products.length > 0" class="mt-16 flex justify-center">
-            <button class="bg-white border-2 border-black text-black px-12 py-3.5 text-sm font-bold tracking-[0.15em] uppercase transition-all duration-300 hover:bg-black hover:text-white active:scale-95">
-              Load More
+
+          <div v-if="hasMore" class="mt-16 flex justify-center">
+            <button
+              @click="loadMore"
+              :disabled="isLoadingMore"
+              class="bg-white border-2 border-black text-black px-12 py-3.5 text-sm font-bold tracking-[0.15em] uppercase transition-all duration-300 hover:bg-black hover:text-white active:scale-95 flex items-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <span v-if="isLoadingMore" class="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+              {{ isLoadingMore ? 'Loading...' : 'Load More' }}
             </button>
           </div>
 
@@ -167,52 +180,85 @@ const route = useRoute()
 const medusa = useMedusa()
 const handle = route.params.handle
 
-// 1. Fetch Region Data (for Australian pricing format)
+// 分页与筛选状态
+const sortBy = ref('created_at')
+const products = ref([])
+const totalCount = ref(0)
+const offset = ref(0)
+const limit = 12
+const isLoadingMore = ref(false)
+
+// 1. 获取 Region
 const { data: regionData } = await useAsyncData('regions', () => medusa('/store/regions'))
 const regionId = computed(() => regionData.value?.regions?.[0]?.id)
 
-// 2. Fetch Category Details by handle
-const { data: categoryData } = await useAsyncData(`category-${handle}`, () => 
-  medusa(`/store/product-categories?handle=${handle}`)
+// 2. 获取分类详细信息
+const { data: categoryData } = await useAsyncData(`category-${handle}`, () =>
+  medusa(`/store/product-categories?handle=${handle}&fields=id,name,handle,metadata`)
 )
 const category = computed(() => categoryData.value?.product_categories?.[0])
 
-// 3. State for sorting
-const sortBy = ref('created_at')
+// 构建请求 URL 的辅助函数
+const buildProductsUrl = (currentOffset) => {
+  let url = `/store/products?category_id[]=${category.value.id}&limit=${limit}&offset=${currentOffset}`
 
-// 4. Fetch Products for this specific category
-const { data: productsData, pending: productsPending, refresh: refreshProducts } = await useAsyncData(`products-${handle}`, async () => {
-  if (!category.value?.id) return { products: [] }
-  
-  let url = `/store/products?category_id[]=${category.value.id}&limit=24`
-  
-  // Apply region pricing if available
-  if (regionId.value) {
-    url += `&region_id=${regionId.value}`
-  }
-  
-  // Map our UI sort options to Medusa's order parameter
+  if (regionId.value) url += `&region_id=${regionId.value}`
+
   if (sortBy.value === 'price_asc') url += '&order=price_asc'
   else if (sortBy.value === 'price_desc') url += '&order=price_desc'
   else if (sortBy.value === 'title_asc') url += '&order=title_asc'
   else if (sortBy.value === 'title_desc') url += '&order=title_desc'
-  else url += '&order=-created_at' // Default featured/newest
+  else url += '&order=-created_at'
 
-  return medusa(url)
-}, {
-  watch: [category] // Refetch if the category changes
-})
+  return url
+}
 
-const products = computed(() => productsData.value?.products || [])
+// 3. SSR 友好的首屏数据拉取
+const { data: initialProductsData, pending: isInitialLoading, refresh: refreshInitial } = await useAsyncData(
+  `products-${handle}-${sortBy.value}`,
+  async () => {
+    if (!category.value?.id) return { products: [], count: 0 }
+    return medusa(buildProductsUrl(0))
+  }
+)
 
-// Watch the sort dropdown and re-fetch products from Medusa when it changes
-watch(sortBy, () => {
-  refreshProducts()
-})
+// 将 SSR 获取的数据同步到本地 ref 中
+watch(initialProductsData, (newData) => {
+  if (newData) {
+    products.value = newData.products || []
+    totalCount.value = newData.count || newData.products?.length || 0
+    offset.value = 0
+  }
+}, { immediate: true })
+
+// 4. 判断是否还有更多
+const hasMore = computed(() => products.value.length < totalCount.value)
+
+// 5. Load More
+const loadMore = async () => {
+  if (isLoadingMore.value || !hasMore.value) return
+
+  isLoadingMore.value = true
+  offset.value += limit
+
+  try {
+    const response = await medusa(buildProductsUrl(offset.value))
+    products.value = [...products.value, ...(response.products || [])]
+    totalCount.value = response.count || response.products?.length || 0
+  } catch (error) {
+    console.error("Failed to load more products:", error)
+  } finally {
+    isLoadingMore.value = false
+  }
+}
+
+// 6. 切换排序
+const handleSortChange = () => {
+  refreshInitial()
+}
 </script>
 
 <style scoped>
-/* Optional: Adding a subtle dot pattern for categories without a hero image */
 .pattern-dots {
   background-image: radial-gradient(#d1d5db 1px, transparent 1px);
   background-size: 20px 20px;
