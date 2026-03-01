@@ -15,6 +15,10 @@
   "scripts": {
     "build": "medusa build",
     "seed": "medusa exec ./src/scripts/seed.ts",
+    "seed:furniture": "medusa exec ./src/scripts/seed-furniture.ts",
+    "seed:prices": "medusa exec ./src/scripts/seed-price-lists.ts",
+    "debug:products": "medusa exec ./src/scripts/debug-products.ts",
+    "debug:prices": "medusa exec ./src/scripts/debug-prices.ts",
     "start": "medusa start",
     "dev": "medusa develop",
     "test:integration:http": "TEST_TYPE=integration:http NODE_OPTIONS=--experimental-vm-modules jest --silent=false --runInBand --forceExit",

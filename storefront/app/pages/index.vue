@@ -22,10 +22,6 @@
       </div>
     </section>
 
-    <div class="bg-[#E5F573] text-[#2C2C2C] text-xs sm:text-sm font-semibold text-center py-4 tracking-[0.15em] uppercase relative z-20">
-      Hurry - End of Season Sale Ends Sunday 11:59 PM
-    </div>
-
     <section class="py-12 bg-white border-b border-gray-100">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative group">
         
@@ -49,9 +45,11 @@
         <div v-else-if="displayCategories.length === 0" class="flex justify-center py-10 w-full text-gray-400 text-sm">
           No categories configured for homepage.
         </div>
+        
         <div 
           v-else
           ref="carouselRef"
+          @scroll="onCategoryScroll"
           class="flex gap-5 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
         >
           <NuxtLink 
@@ -68,6 +66,13 @@
               {{ cat.name }}
             </h3>
           </NuxtLink>
+        </div>
+
+        <div v-if="displayCategories.length > 0" class="max-w-[200px] mx-auto mt-6 bg-gray-200 h-1.5 rounded-full overflow-hidden">
+          <div 
+            class="bg-black h-full rounded-full w-1/4 transition-transform duration-100 ease-out"
+            :style="{ transform: `translateX(${categoryScrollProgress * 3}%)` }"
+          ></div>
         </div>
 
       </div>
@@ -100,7 +105,7 @@
       </div>
     </section>
 
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 overflow-hidden">
       <div class="text-center mb-16">
         <h2 class="text-3xl sm:text-4xl font-serif font-extrabold text-gray-900 mb-4 tracking-tighter uppercase">
           Recommended for You
@@ -115,18 +120,42 @@
         Failed to load products: {{ error.message }}
       </div>
       
-      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-12">
-        <ProductCard 
-          v-for="product in data?.products" 
-          :key="product.id" 
-          :product="product" 
-        />
-      </div>
-      
-      <div class="mt-16 text-center">
-        <button class="border-2 border-black text-black px-10 py-4 font-black uppercase tracking-[0.15em] hover:bg-black hover:text-white transition-colors duration-300 rounded-sm">
-          View All Furniture
+      <div v-else class="relative group">
+        <button 
+          @click="scrollProducts('left')" 
+          class="absolute left-0 sm:-left-4 top-[35%] -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-12 h-12 bg-white border border-gray-100 rounded-full text-gray-600 shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-300 hover:bg-black hover:text-white hover:border-black active:scale-90"
+        >
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
         </button>
+
+        <button 
+          @click="scrollProducts('right')" 
+          class="absolute right-0 sm:-right-4 top-[35%] -translate-y-1/2 z-20 hidden sm:flex items-center justify-center w-12 h-12 bg-white border border-gray-100 rounded-full text-gray-600 shadow-lg opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-all duration-300 hover:bg-black hover:text-white hover:border-black active:scale-90"
+        >
+          <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+        </button>
+
+        <div 
+          ref="productCarouselRef"
+          @scroll="onProductScroll"
+          class="flex gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-8 pt-4 px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+        >
+          <div 
+            v-for="product in data?.products" 
+            :key="product.id"
+            class="snap-start shrink-0 w-[260px] sm:w-[280px]"
+          >
+            <ProductCard :product="product" />
+          </div>
+        </div>
+
+        <div class="max-w-[240px] mx-auto mt-2 bg-gray-200 h-1.5 rounded-full overflow-hidden">
+          <div 
+            class="bg-black h-full rounded-full w-1/4 transition-transform duration-100 ease-out"
+            :style="{ transform: `translateX(${productScrollProgress * 3}%)` }"
+          ></div>
+        </div>
+
       </div>
     </section>
 
@@ -200,16 +229,23 @@ import { useRouter } from 'vue-router'
 const medusa = useMedusa()
 const router = useRouter()
 
-// 1. 商品拉取逻辑
 const { data: regionData } = await useAsyncData('regions', () => medusa('/store/regions'))
 const regionId = regionData.value?.regions?.[0]?.id
 
 const { data, pending, error } = await useAsyncData('products', () => {
-  const url = regionId ? `/store/products?region_id=${regionId}` : '/store/products'
+  const url = regionId ? `/store/products?region_id=${regionId}&limit=100` : '/store/products?limit=100'
   return medusa(url)
+}, {
+  transform: (response) => {
+    if (response && response.products) {
+      response.products = response.products
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 16)
+    }
+    return response
+  }
 })
 
-// 2. 分类拉取逻辑
 const { data: categoriesData, pending: categoriesPending } = await useAsyncData('categories', () => medusa('/store/product-categories'))
 
 const displayCategories = computed(() => {
@@ -231,17 +267,48 @@ const handleShopNowClick = () => {
   router.push('/collections/sale')
 }
 
-// 单纯的跳转逻辑
 const handleCheckDelivery = () => {
   router.push('/delivery-information')
 }
 
-// 轮播滚动控制
+// ==========================================
+// 🌟 轮播控制与滑动进度条核心逻辑
+// ==========================================
+
+const categoryScrollProgress = ref(0)
+const productScrollProgress = ref(0)
+
+// 通用的滚动计算函数
+const handleScroll = (e, progressRef) => {
+  const el = e.target
+  const maxScrollLeft = el.scrollWidth - el.clientWidth
+  if (maxScrollLeft > 0) {
+    // 计算百分比 0 到 100
+    progressRef.value = (el.scrollLeft / maxScrollLeft) * 100
+  } else {
+    progressRef.value = 0
+  }
+}
+
+// 绑定到相应的轮播图上
+const onCategoryScroll = (e) => handleScroll(e, categoryScrollProgress)
+const onProductScroll = (e) => handleScroll(e, productScrollProgress)
+
+// 分类轮播按钮控制
 const carouselRef = ref(null)
 const scrollCategories = (direction) => {
   if (carouselRef.value) {
     const scrollAmount = direction === 'left' ? -240 : 240 
     carouselRef.value.scrollBy({ left: scrollAmount, behavior: 'smooth' })
+  }
+}
+
+// 商品轮播按钮控制
+const productCarouselRef = ref(null)
+const scrollProducts = (direction) => {
+  if (productCarouselRef.value) {
+    const scrollAmount = direction === 'left' ? -304 : 304 
+    productCarouselRef.value.scrollBy({ left: scrollAmount, behavior: 'smooth' })
   }
 }
 </script>
