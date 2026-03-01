@@ -10,7 +10,9 @@
     
     <LayoutFooter />
 
-    <button 
+    <CartDrawer />
+
+    <button
       @click="scrollToTop"
       class="fixed bottom-8 right-8 z-50 p-4 bg-black text-white rounded-full shadow-2xl hover:bg-gray-800 hover:scale-110 transition-all duration-300 flex items-center justify-center"
       :class="showScrollButton ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'"
@@ -25,6 +27,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { useCartStore } from '~/stores/cart'
+
+const cartStore = useCartStore()
 
 // 控制返回顶部按钮是否显示
 const showScrollButton = ref(false)
@@ -43,8 +48,9 @@ const scrollToTop = () => {
   })
 }
 
-// 组件挂载时添加滚动监听器
+// 组件挂载时初始化购物车并添加滚动监听器
 onMounted(() => {
+  cartStore.initCart()
   window.addEventListener('scroll', handleScroll)
 })
 

@@ -22,10 +22,12 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
             </svg>
           </div>
-          <input 
-            type="text" 
-            class="block w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-sm text-sm placeholder-gray-400 font-medium text-black focus:bg-white focus:border-black focus:ring-0 transition-all duration-300 outline-none" 
-            
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search furniture..."
+            class="block w-full pl-12 pr-4 py-3 bg-gray-50 border border-transparent rounded-sm text-sm placeholder-gray-400 font-medium text-black focus:bg-white focus:border-black focus:ring-0 transition-all duration-300 outline-none"
+            @keyup.enter="handleSearch"
           />
         </div>
 
@@ -127,11 +129,21 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useCartStore } from '~/stores/cart'
 
 const medusa = useMedusa()
 const cartStore = useCartStore()
+const router = useRouter()
 const categories = ref([])
+const searchQuery = ref('')
+
+const handleSearch = () => {
+  const q = searchQuery.value.trim()
+  if (!q) return
+  searchQuery.value = ''
+  router.push(`/search?q=${encodeURIComponent(q)}`)
+}
 
 // 从 Medusa v2 拉取商品分类树（需要指定 fields 才能获取 metadata）
 const { data } = await useAsyncData('header-categories', () =>

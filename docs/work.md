@@ -1,90 +1,77 @@
 
-
 # 电商项目全栈开发计划与进度追踪
 
 ## 当前整体状态
 
-目前处于第 1 周阶段。核心目标“UI 闭环与全局状态”已超额完成大部分基础建设，现阶段重点为购物车闭环及分类页面的深度交互开发。
+**第 2 周核心交易漏斗已完成。** 购物车已与 Medusa API 打通，结账页面（地址收集、运费展示、订单预览）已上线，进入第 3 周：支付网关与用户体系。
 
 ---
 
-## 第 1 周：UI 闭环与全局状态
+## 第 1 周：UI 闭环与全局状态 ✅ 已完成
 
-### 已完成任务
+### 全部完成项
 
-* 前端脚手架：Nuxt 3 + Tailwind CSS 初始化。
-* 页面排版：首页布局与滚动交互、PLP (分类列表页) 基础框架、PDP (商品详情页) 轮播与多规格切换。
-* 全局导航：Header 和 Footer 完善，Mega Menu 巨型菜单已对接 Medusa 分类树。
-* 状态管理：Cart Store (Pinia) 逻辑封装，图片懒加载优化。
-
-### 剩余核心任务
-
-* **Drawer Cart UI 组件 (最高优先级)**：基于已有 store 逻辑，创建滑出式购物车面板，实现增删改查。
-* **全局搜索功能**：对接 Medusa `/store/products?q=` 接口。
-* **分类页 `[handle].vue` 完善**：详见下方具体拆解。
-* **基础静态页**：关于我们、联系我们、FAQ。
-
-### 分类页 `[handle].vue` 待开发功能拆解
-
-当前分类页已完成 Hero 图、面包屑、商品网格、基础排序和分页。需补充以下交互：
-
-1. **核心筛选器 (Filter)**
-* 库存状态 (Availability)
-* 颜色/规格 (Colour/Size)：动态提取并去重
-* 价格区间 (Price Range)
-* 重置按钮 (Clear All)
-
-
-2. **交互与状态同步**
-* URL 参数实时同步 (支持分享与回退)
-* 动态商品总数更新与 Active Filters (当前激活标签) 展示
-* 筛选结果为空时的友好提示与引导
-
-
-3. **移动端适配**
-* 增加明显的筛选唤起按钮
-* 底部/侧边滑出式移动端全屏筛选抽屉
-
-
+* ✅ 前端脚手架：Nuxt 4 + Tailwind CSS 初始化
+* ✅ 页面排版：首页布局与滚动交互、PLP (分类列表页) 基础框架、PDP (商品详情页) 轮播与多规格切换
+* ✅ 全局导航：Header 和 Footer 完善，Mega Menu 已对接 Medusa 分类树
+* ✅ 状态管理：Cart Store (Pinia) 完整封装（增删改查、总价计算）
+* ✅ 图片懒加载：ImageLoader 组件（fade-in、骨架屑、thumbnail/card/hero/pdp preset）
+* ✅ **Drawer Cart UI**：右侧滑出购物车面板，遮罩、数量增减、删除、AUD 总价、Checkout 入口，body 滚动锁定
+* ✅ **全局搜索**：Header 搜索框绑定，回车跳转 `/search?q=`，新建搜索结果页（含分页加载）
+* ✅ **分类页筛选器完整逻辑**：
+  * 库存状态 / 颜色（动态提取 product.options）/ 价格区间 / 折扣百分比（预设区间）
+  * 客户端过滤（一次拉取 100 条）+ URL Query 双向同步（支持分享与浏览器回退）
+  * Active Filter 标签栏 + 单项删除 + Clear All + 筛选项计数（括号显示）
+  * 移动端底部全屏筛选抽屉 + 分页器（12条/页，含省略逻辑）
+* ✅ **基础静态页**（Footer 所有链接 404 已消除）：
+  `/faqs` / `/shipping` / `/contact` / `/returns` / `/our-story` / `/privacy` / `/terms`
 
 ---
 
-## 第 2 周：核心交易漏斗与澳洲本地化
+## 第 2 周：核心交易漏斗与澳洲本地化 ✅ 已完成
 
-本周核心目标为攻克结账流程，简化运费逻辑以加速 MVP 交付。
+* ✅ **购物车同步 Medusa API**
+  * Cart Store 新增 `cartId`（localStorage 持久化）、`medusaCart`、`ensureCart()` / `initCart()` / `rawTotal`
+  * 增删改均乐观更新本地状态，后台异步同步至 Medusa `/store/carts` 端点
+  * App 启动时自动从 Medusa 恢复已有购物车（含 lineItemId，支持后续删改）
 
-* **澳洲运费规则 (前端实现)**：硬编码不支持的邮编列表 (如 08*, 09* 等)。前端输入校验拦截，支持配送的地区固定收取 $59 运费，无需后端开发复杂模块。
-* **极简游客结账页 (Guest Checkout)**：地址表单 UI 与校验，对接 Medusa 创建真实购物车 Session，并将会话 ID 存入 localStorage/Cookie。
-* **订单预览 (Order Summary)**：渲染商品总计、GST 消费税明细及运费。
+* ✅ **澳洲运费规则（前端实现）**
+  * 硬编码邮编黑名单：08xx / 09xx（北领地偏远地区）→ 阻止提交并提示
+  * 全澳洲统一运费 AUD $59 平摊运费
+
+* ✅ **极简游客结账页（Guest Checkout）** — `/checkout`
+  * 两栏布局：左侧联系信息 + 收货地址表单；右侧固定订单摘要
+  * 表单字段：Email、Phone（可选）、First/Last Name、Address 1/2、City、State（下拉）、Postcode
+  * 实时校验 + 触碰即验证（email 格式、必填、邮编格式与支持地区）
+  * 提交后调用 Medusa `POST /store/carts/:id` 同步收货地址与邮箱
+
+* ✅ **订单预览（Order Summary）**
+  * 商品列表（缩略图、名称、规格、数量角标、单项合计）
+  * 小计 / 运费 / GST 明细（包含于小计中，已注明）/ 总计
 
 ---
 
-## 第 3 周：支付网关与第三方服务接入
+## 第 3 周：支付网关与第三方服务接入（当前阶段）
 
-本周目标为跑通交易通道。为提高开发效率，调整了部分功能的实现路径。
-
-* **Stripe 支付集成**：采用 Stripe Checkout Redirect 方案 (替代原计划的 Elements 嵌入)，缩短开发时间。联调 Medusa 更新订单状态。
-* **基础用户体系**：实现简单的邮箱密码登录/注册 (Google OAuth 延后)。
-* **邮件通知引擎**：对接 SendGrid，设计基础邮件模板，在订单确认时触发发送。
+* **Stripe 支付集成**：采用 Stripe Checkout Redirect 方案，联调 Medusa 订单状态
+* **基础用户体系**：邮箱密码登录/注册（Google OAuth 延后）
+* **邮件通知引擎**：对接 SendGrid，订单确认触发邮件发送
 
 ---
 
 ## 第 4 周：生产环境部署与性能压测
 
-本周目标为代码上云、性能优化及正式交付上线。
-
-* **第三方登录补全**：实现 Google OAuth 一键登录。
-* **服务器与后端部署**：初始化腾讯云服务器 (Docker, Nginx, PostgreSQL, Redis)，打包部署 Medusa v2 后端。
-* **静态资源加速**：配置腾讯云 COS/CDN，确保全站商品图片走对象存储加速。
-* **前端 SSR 与 SEO 优化**：部署 Nuxt 3 前端并开启 SSR。配置全站 Meta 标签、Sitemap 与结构化数据。
-* **上线前准备**：配置真实域名与 SSL 证书。全站 UAT 测试，覆盖移动端适配与全链路下单模拟。
+* **Google OAuth 一键登录**
+* **服务器部署**：腾讯云服务器（Docker, Nginx, PostgreSQL, Redis），部署 Medusa v2 后端
+* **静态资源加速**：腾讯云 COS/CDN，商品图片走对象存储
+* **前端 SSR 部署与 SEO**：Nuxt 4 SSR 上线，全站 Meta 标签、Sitemap、结构化数据
+* **上线前准备**：真实域名 + SSL，全链路 UAT（移动端、下单、支付）
 
 ---
 
 ## 核心策略调整记录
 
-* **运费模块**：由后端动态计算改为前端硬编码校验，降低复杂度。
-* **支付接入**：由 Stripe Elements 嵌入改为使用 Checkout 重定向方案，提升开发速度。
-* **用户认证**：邮箱注册作为基础优先完成，Google OAuth 移至第 4 周。
-* **SEO 工作**：原定第 4 周，现提前至第 3 周中期进行基础配置。
-
+* **运费模块**：后端动态计算 → 前端硬编码校验，降低复杂度
+* **支付接入**：Stripe Elements 嵌入 → Checkout 重定向方案，提升开发速度
+* **用户认证**：邮箱注册优先，Google OAuth 移至第 4 周
+* **SEO 工作**：提前至第 3 周中期进行基础配置
