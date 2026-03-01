@@ -4,239 +4,83 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Australian furniture e-commerce platform (1:1 McPhails.com.au replica) using Medusa v2 backend + Nuxt 4 frontend.
+Australian furniture e-commerce site built on MedusaJS v2. Three sub-projects:
+- `backend/` — MedusaJS v2 API server (Node.js/TypeScript, port 9000)
+- `storefront/` — **Primary** Nuxt 4 frontend (Vue 3/TypeScript, port 3000)
+- `backend-storefront/` — Reference Next.js Medusa starter (port 8000, kept for reference)
 
-**Tech Stack:**
-- Backend: Medusa v2.13.1 (Node.js 20+, TypeScript)
-- Frontend: Nuxt 4.3.1 (Vue 3.5.28, Element Plus 2.13.2)
-- Database: PostgreSQL 15 (Docker)
-- Cache: Redis 7.2 (Docker)
-- File Storage: 腾讯云 COS (腾讯云对象存储)
+Infrastructure: PostgreSQL + Redis managed via `docker-compose.yml` at project root.
 
 ## Development Commands
 
-### Start Full Stack
+### Start infrastructure (required first)
 ```bash
-# Start database services (PostgreSQL + Redis)
 docker-compose up -d
-
-# Backend (port 9000)
-cd backend && npm run dev
-
-# Frontend (port 3000)
-cd storefront && npm run dev
 ```
 
-### Backend Commands
+### Backend (`cd backend`)
 ```bash
-cd backend
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run seed     # Seed demo data (products, categories, etc.)
+npm run dev          # Start dev server (port 9000)
+npm run build        # Production build
+npm run seed:furniture  # Seed product/category data
+npm run seed:prices  # Seed price lists
+npm run update:category-metadata  # Update category images/ranks
+npm run test:unit
+npm run test:integration:http
+npm run test:integration:modules
 ```
 
-### Frontend Commands
+### Storefront (`cd storefront`)
 ```bash
-cd storefront
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run generate # Generate static site
+npm run dev          # Start dev server (port 3000)
+npm run build        # Production build
+npm run generate     # Static site generation
 ```
 
-### Tests
-```bash
-cd backend
-npm run test:unit              # Unit tests
-npm run test:integration:http  # HTTP integration tests
-npm run test:integration:modules # Module integration tests
-```
+### Environment Setup
+Copy `.env` (already present) and fill in real values. Key variables:
+- `DATABASE_URL`, `REDIS_URL` — matched to docker-compose defaults
+- `NUXT_PUBLIC_MEDUSA_URL` — storefront → backend URL
+- `NUXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY` — Medusa publishable API key (create in admin)
+- `S3_*` — Tencent Cloud COS config (S3-compatible file storage)
 
 ## Architecture
 
-### Backend (Medusa v2)
+### Data Flow
+All storefront API calls go through the `useMedusa()` composable (`storefront/app/composables/useMedusa.ts`), which wraps `$fetch` with the backend base URL and `x-publishable-api-key` header. Use this for every Medusa API call.
 
-Medusa v2 uses a **modular architecture**:
+### Storefront Page Structure
+- `pages/index.vue` — Homepage: hero banner, category carousel, product carousel, testimonials, FAQ
+- `pages/categories/[handle].vue` — Category listing with sidebar filters, sort, pagination (SSR + load more)
+- `pages/products/[id].vue` — PDP with image gallery, zoom, variant selection, add-to-cart
 
-```
-backend/src/
-├── admin/         # Admin panel customizations
-├── api/           # Custom API endpoints (store/*, admin/*)
-│   ├── store/     # Storefront API routes
-│   └── admin/     # Admin API routes
-├── modules/       # Custom business modules (shipping, payment, etc.)
-├── workflows/     # Workflow definitions for complex operations
-├── links/         # Module linking definitions
-├── subscribers/   # Event handlers
-├── jobs/          # Scheduled jobs
-└── scripts/       # Utility scripts (seed.ts)
-```
+**Important:** Products are fetched by `handle`, not `id`:
+- Product page route param is `[id]` but actually contains the handle — fetches via `/store/products?handle=...`
+- Category pages fetch via `/store/product-categories?handle=...`
 
-**Key Concepts:**
-- **Modules**: Replace v1 plugins. Use for extending functionality (payment, file storage, etc.)
-- **Workflows**: Define business logic chains using `@medusajs/workflows-sdk`
-- **Links**: Connect data between different modules
-- **API Routes**: File-based routing under `src/api/`
+### Key Components
+- `ProductCard.vue` — Displays product with AUD pricing, discount badge, wishlist toggle, lazy-loaded image
+- `ImageLoader.vue` — Wrapper around `@nuxt/image` with fade-in skeleton; use presets: `thumbnail`, `card`, `hero`, `pdp`
 
-Configuration: `backend/medusa-config.ts`
+### State Management
+- `stores/cart.ts` (Pinia) — Local cart state only; not yet synced with Medusa cart API. Exposes `drawerVisible`, `addItem`, `removeItem`, `updateQuantity`, `totalItems`, `totalPrice`.
 
-### Frontend (Nuxt 4)
+### Category Display on Homepage
+Categories appear in the homepage carousel only if `metadata.image_url` is set. Sort order is controlled by `metadata.rank` (lower = first). Run `npm run update:category-metadata` in the backend after seeding.
 
-Uses Nuxt 4's **app directory** structure:
+### Pricing
+- All prices in AUD; formatted with `en-AU` locale
+- Prices come from `variant.calculated_price.calculated_amount` (region-aware) with fallback to `variant.prices[0].amount`
+- Always fetch with `region_id` param (first region from `/store/regions`)
+- Discounts shown when `calculated_amount < original_amount`
 
-```
-storefront/app/
-├── pages/         # File-based routing
-│   ├── index.vue              # Homepage
-│   └── products/
-│       └── [id].vue           # Product Detail Page (PDP)
-├── components/    # Vue components
-│   ├── layout/
-│   │   ├── Header.vue         # Site header with mega menu
-│   │   └── Footer.vue         # Site footer
-│   └── ProductCard.vue        # Product listing card
-├── composables/   # Auto-imported composables
-│   └── useMedusa.ts          # Medusa API client
-├── stores/        # Pinia state management
-│   └── cart.ts                # Shopping cart state
-└── app.vue        # Root component (scroll-to-top button)
-```
+### Backend Customization Points
+- `src/modules/` — Custom Medusa modules
+- `src/workflows/` — Custom workflows
+- `src/scripts/` — Seeding and migration scripts (run via `medusa exec ./src/scripts/<name>.ts`)
+- `src/api/store/` — Custom store API routes
+- `src/api/admin/` — Custom admin API routes
+- `src/subscribers/` — Event subscribers
 
-**Key Patterns:**
-- Use `useMedusa()` composable for API calls (handles auth + baseURL)
-- Use `useAsyncData()` for SSR data fetching
-- Element Plus for UI components
-- Tailwind CSS for styling (utility-first)
-- Pinia for state management
-
-Configuration: `storefront/nuxt.config.ts`
-
-## API Communication
-
-Frontend connects to Medusa backend via:
-
-```typescript
-// app/composables/useMedusa.ts
-const medusa = useMedusa()
-const { products } = await medusa('/store/products')
-```
-
-Required headers (auto-configured in composable):
-- `x-publishable-api-key`: Set via `NUXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY`
-
-Common endpoints:
-- `GET /store/products` - List products
-- `GET /store/products/:id` - Get product details
-- `GET /store/product-categories` - Get categories
-- `GET /store/product-categories?include_descendants_tree=true` - Get category tree
-
-## Shopping Cart (Pinia Store)
-
-Location: `app/stores/cart.ts`
-
-Features:
-- Drawer-based slide-out cart UI
-- Add/remove items with quantity management
-- Total items and price calculation
-- Auto-opens drawer when items added
-
-Usage:
-```typescript
-const cartStore = useCartStore()
-cartStore.addItem(variant, product, quantity)
-cartStore.openDrawer()
-cartStore.closeDrawer()
-```
-
-## Australian Market Specifics
-
-- **Currency**: AUD (format as `$1,299.00`)
-- **GST**: 10% included in all prices
-- **Shipping**: $59 flat rate, postcode-based remote area exclusion
-- **Remote Postcodes**: 08*, 09*, 67xx, 68xx regions
-
-## Media & Images
-
-- **Storage**: 腾讯云 COS (腾讯云对象存储)
-- **CDN URL Format**: `https://{bucket}.cos.{region}.myqcloud.com`
-- **Dynamic Category Images**: Use category `metadata.image_url` and `metadata.rank` for homepage display
-
-## Environment Variables
-
-**Backend (.env):**
-```bash
-# Database
-DATABASE_URL=postgres://medusa:medusa123@localhost:5432/furniture-store
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# CORS
-STORE_CORS=http://localhost:3000
-ADMIN_CORS=http://localhost:7001
-AUTH_CORS=http://localhost:3000
-
-# Auth secrets
-JWT_SECRET=change-this-to-a-random-secret-key
-COOKIE_SECRET=change-this-to-another-random-secret-key
-
-# S3 / 腾讯云 COS
-S3_BUCKET=your-bucket-name
-S3_REGION=ap-singapore
-S3_ACCESS_KEY_ID=your-access-key
-S3_SECRET_ACCESS_KEY=your-secret-key
-S3_URL=https://cos.ap-singapore.myqcloud.com
-```
-
-**Frontend (storefront/.env):**
-```bash
-NUXT_PUBLIC_MEDUSA_URL=http://localhost:9000
-NUXT_PUBLIC_MEDUSA_PUBLISHABLE_KEY=your-publishable-key
-```
-
-## UI Components & Styling
-
-**UI Library**: Element Plus (auto-imported via `@element-plus/nuxt`)
-
-**Common Components:**
-- `<NuxtLink>` - Internal links (prevents full page reload)
-- `useMedusa()` - API calls
-- `useAsyncData()` - SSR-safe data fetching
-
-**Styling:**
-- Tailwind CSS utility classes
-- Custom spacing using `@nuxtjs/tailwindcss`
-- Element Plus components: `el-drawer`, `el-menu`, etc.
-
-## Project Status & Recent Updates
-
-Based on git history:
-- ✅ Homepage UI optimized (mail module, discount cards)
-- ✅ Dynamic discount card rendering via Medusa metadata
-- ✅ PDP (Product Detail Page) basic implementation
-- ✅ Price display issues resolved
-- ✅ Tencent Cloud OSS file storage configured
-- ✅ Nuxt 4 + Medusa v2 integration working
-
-**In Progress:**
-- Product Detail Page refinement
-- Shopping cart checkout flow
-- Shipping module for Australian postcodes
-- Payment integration (Stripe + Afterpay/Zip)
-
-## Project References
-
-- Tech Design: `docs/TechDesign.md`
-- PRD: `docs/PRD.md`
-- Backend README: `backend/README.md`
-- Target Reference Site: https://mcphails.com.au
-
-## Git Workflow
-
-Current branch: `main`
-Remote: GitHub
-
-When committing changes:
-- Use conventional commit messages
-- Reference PRD features when applicable
-- Test both frontend and backend after changes
+### File Storage
+Configured to use Tencent Cloud COS via `@medusajs/file-s3` (S3-compatible). The `file_url` is constructed as `https://${S3_BUCKET}.cos.${S3_REGION}.myqcloud.com`. Images from Unsplash (`images.unsplash.com`) are also whitelisted for `@nuxt/image`.
